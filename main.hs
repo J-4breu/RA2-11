@@ -44,3 +44,38 @@ data LogEntry = LogEntry
   , detalhes :: String      -- ^ Descrição detalhada
   , status :: StatusLog     -- ^ Resultado da operação
   } deriving (Show, Read, Eq)
+-- ============================================================================
+-- FUNÇÕES DE ANÁLISE DE LOGS (Aluno 4: Validação e Documentação)
+-- ============================================================================
+
+-- | Filtra apenas os logs que representam erros
+logsDeErro :: [LogEntry] -> [LogEntry]
+logsDeErro = filter isErro
+  where
+    isErro (LogEntry _ _ _ (Falha _)) = True
+    isErro _ = False
+
+-- | Retorna histórico de operações que mencionam um item específico
+historicoPorItem :: String -> [LogEntry] -> [LogEntry]
+historicoPorItem itemId = filter contemItem
+  where
+    contemItem (LogEntry _ _ det _) = itemId `elem` words det
+
+-- | Identifica o item mais movimentado (mais menções nos logs)
+itemMaisMovimentado :: [LogEntry] -> Maybe (String, Int)
+itemMaisMovimentado logs =
+  let
+    -- Extrai IDs de itens dos logs
+    items = concatMap extrairItems logs
+    -- Conta ocorrências de cada item
+    contagens = Map.toList $ Map.fromListWith (+) [(i, 1) | i <- items]
+  in
+    if null contagens
+      then Nothing
+      else Just $ foldr1 maiorContagem contagens
+  where
+    -- Extrai primeiro ID mencionado nos detalhes
+    extrairItems (LogEntry _ _ det _) = 
+      take 1 $ filter (not . null) $ words det
+    -- Compara e retorna item com maior contagem
+    maiorContagem x y = if snd x > snd y then x else y
